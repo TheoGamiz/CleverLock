@@ -1,3 +1,24 @@
+
+/* 1. Define the WiFi credentials */
+//#define WIFI_SSID "Bbox-7A11FB53"
+//#define WIFI_PASSWORD "aKWsa2y61r6ED7VJ2d"
+
+
+#include <Adafruit_Fingerprint.h>
+
+#if (defined(__AVR__) || defined(ESP8266)) && !defined(__AVR_ATmega2560__)
+SoftwareSerial mySerial(4, 5);
+#else
+#define mySerial Serial1
+#endif
+
+
+
+Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
+
+
+
+
 #include <ArduinoJson.h>
 #include <Arduino.h>
 #if defined(ESP32) || defined(ARDUINO_RASPBERRY_PI_PICO_W)
@@ -12,8 +33,8 @@
 #include <addons/TokenHelper.h>
 
 /* 1. Define the WiFi credentials */
-#define WIFI_SSID "Bbox-7A11FB53"
-#define WIFI_PASSWORD "aKWsa2y61r6ED7VJ2d"
+#define WIFI_SSID "HUAWEI_E5576_346C"
+#define WIFI_PASSWORD "0YFTJ29F03Q"
 
 /* 2. Define the API Key */
 #define API_KEY "AIzaSyC8evfxnTsV25SvaeAMr6T0rcoAzHJOjZk"
@@ -45,6 +66,18 @@ void setup()
 
     Serial.begin(115200);
     pinMode(locker, OUTPUT);
+
+
+
+    finger.begin(57600);
+delay(5);
+if (finger.verifyPassword()) {
+  Serial.println("Found fingerprint sensor!");
+} 
+else {
+  Serial.println("Did not find fingerprint sensor :(");
+  while (1) { delay(1); }
+}
 
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
     multi.addAP(WIFI_SSID, WIFI_PASSWORD);
@@ -110,8 +143,43 @@ void loop()
 
     // Firebase.ready() should be called repeatedly to handle authentication tasks.
 
-    if (Firebase.ready() && (millis() - dataMillis > 200 || dataMillis == 0))
+    if (Firebase.ready() && (millis() - dataMillis > 2000 || dataMillis == 0))
     {
+
+
+
+      uint8_t p = finger.getImage();
+if (p == FINGERPRINT_NOFINGER)  goto NoFinger; 
+else if (p == FINGERPRINT_OK) {
+  p = finger.image2Tz();
+  if (p != FINGERPRINT_OK)  goto NoMatch;
+  p = finger.fingerFastSearch();
+  if (p != FINGERPRINT_OK)  goto NoMatch;
+  Serial.print("Welcome! Your ID is ");
+  Serial.print(finger.fingerID);
+  Serial.println(". You are granted access.");
+  digitalWrite(locker, HIGH);
+  delay(3000);
+  digitalWrite(locker, LOW);
+  return; 
+}
+NoMatch: 
+{
+Serial.println("Access  Denied"); 
+
+
+delay(1500); 
+return;
+} 
+NoFinger: 
+{
+Serial.println("No finger detected");
+
+} 
+
+
+
+
         dataMillis = millis();
 
         if (!taskCompleted)
