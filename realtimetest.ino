@@ -251,9 +251,13 @@ void loop() {
                     Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
                 else
                     Serial.println(fbdo.errorReason());
+                    DynamicJsonDocument jsonDoc(1024); // Adjust the size if necessary
+                DeserializationError error = deserializeJson(jsonDoc, fbdo.payload().c_str());
+                int lockId = jsonDoc["fields"]["lock_id"]["integerValue"].as < int > ();
                 Serial.println("Ready to enroll a fingerprint!");
-                Serial.println("Please type in the ID # (from 1 to 127) you want to save this finger as...");
-                id = readnumber();
+                Serial.println("Please type in the ID # (from 1 to 127) you want to save this finger as... and the lock id is " + lockId);
+                Serial.println(lockId);
+                id = lockId;
                 if (id == 0) { // ID #0 not allowed, try again!
                     return;
                 }
